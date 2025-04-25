@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <title>绿映学府，寻迹植趣</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+		body {
+			font-family: 'Arial', '微软雅黑', sans-serif; /* 设置默认字体 */
+		}
+		.modal-content h2 {
+			font-family: 'Microsoft YaHei', '黑体', sans-serif; /* 标题字体 */
+			font-size: 24px; /* 可调整标题字号 */
+			margin-bottom: 5px;
+		}
+		
+		.modal-content p {
+			font-family: 'STZhongsong', '华文中宋', serif; /* 正文字体 */
+			font-size: 16px; /* 可调整正文字号 */
+			line-height: 1.6;
+		}
+        .map {
+            width: 1500px;
+            height: 1060.752px;
+        }
+        .plant-container {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .plant-pic {
+            width: 100%;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+        .plant-hover {
+            position: absolute;
+            width: 128px;
+            height: 96px;
+            top: -106px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 2;
+        }
+        .plant-container:hover .plant-hover {
+            display: block;
+        }
+        .plant-modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            width: 70%;
+            max-width: 800px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+        }
+        .close:hover {
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <img src="上海中学地图20240507中英文定稿 箭头已更新.png" class="map"/>
+    <div id="plant-containers"></div>
+    <div id="plant-modal" class="plant-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title"></h2>
+            <p id="modal-description"></p>
+            <img id="modal-image" alt="细节图" style="width:100%">
+        </div>
+    </div>
+
+    <script>
+        const plants = [
+            {
+                name: '丛生乌桕',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/从生乌桕.jpg',
+                description: '落叶乔木，喜光树种，对光照、温度均有一定的要求，为中国特有的经济树种，乌桕树冠整齐，叶形秀丽，秋叶经霜时如火如荼，十分美观，有“乌桕赤于枫，园林二月中”之赞名乌桕根皮、树皮、叶入药，其木也是优良木材，极具经济和园艺价值。',
+                top: '933px',
+                left: '325px'
+            },
+            {
+                name: '白花檵木',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/白花檵木.jpg',
+                description: '灌木或小乔木，多分枝，小枝有星毛。有星毛；叶片先端尖锐，基部钝，不等侧。种子圆卵形，黑色，发亮。花期3-4月。喜生于向阳的丘陵及山地，亦常出现马尾松林及杉林下。木可供药用。叶用于止血，根及叶用于跌打损伤，有去生新功效。',
+                top: '605px',
+                left: '1100px'
+            },
+            {
+                name: '海棠',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/海棠.jpg',
+                description: '乔木，性喜阳光，不耐阴，忌水湿，极为耐寒。海棠是中国的特有植物。花期4-5月，果期8-9月。海棠树姿优美，春花烂漫，入秋后金果满树，芳香袭人。素有“国艳”之誉，是重要的温带观花树木。海棠树对二氧化硫有较强的抗性，适用于城市街道绿地和矿区绿化。',
+                top: '345px',
+                left: '815px'
+            },
+			{
+                name: '巨紫荆',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/巨紫荆.jpg',
+                description: '落叶乔木，树冠伞型，因树形高大、花同紫荆而得名巨紫荆。巨紫荆生长迅速，萌蘖性强，耐修剪，花期3-4月，果期10月。享有“像法桐一样高大、似樱花一样灿烂”的美誉，在园林绿化中具有较高的观赏价值和广阔的应用前景。',
+                top: '640px',
+                left: '220px'
+            },
+			{
+                name: '白玉兰',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/白玉兰.jpg',
+                description: '落叶乔木，枝广展形成宽阔的树冠；树皮深灰色，粗糙开裂；小枝稍粗壮，花期2-3月，果期8-9月。白玉兰为中国特有种，喜阳光，稍耐阴，有一定耐寒性，对温度较敏感，愈向南开花愈早。早春白花满树，艳丽芳香，白玉兰花如“玉雪霓裳”，形有“君子之姿”，香则清新、淡雅、宜人，是著名的庭园观赏树种，也是上海市市花。',
+                top: '750px',
+                left: '1030px'
+            },
+			{
+                name: '垂柳',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/垂柳.jpg',
+                description: '高大落叶乔木，小枝细长下垂，淡黄褐色。叶互生，披针形或条状披针形，喜光，喜温暖湿润气候，生命力强。花期3-4月；果熟期4-6月。也可作庭荫树、行道树、公路树。亦适用于工厂绿化，还是固堤护岸的重要树种。',
+                top: '830px',
+                left: '980px'
+            },
+			{
+                name: '垂丝海棠',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/垂丝海棠.jpg',
+                description: '落叶小乔木，花期3-4月，果期9-10月。喜光，喜温暖湿润环境，不耐阴，垂丝海棠花丝下垂，花开朝下，名字由此而来。垂丝海棠树形优美、枝叶扶疏、花色艳丽，观赏价值极高，可做大型盆栽或绿化树植。垂丝海棠果实可食用，可制作蜜饯。',
+                top: '540px',
+                left: '812px'
+            },
+			{
+                name: '桂花',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/桂花.jpg',
+                description: '灌木或小乔木，其园艺品种繁多，属长日照植物，喜在充足的阳光和土层肥厚、排水良好的地方生长，终年常绿，枝繁叶茂，秋季开花，是中国传统十大名花之一，是集绿化、美化、香化于一体的观赏和实用兼备的优良园林树种。',
+                top: '495px',
+                left: '790px'
+            },
+			{
+                name: '槐树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/槐树.jpg',
+                description: '乔木，树皮灰褐色，具纵裂纹。当年生枝绿色，无毛。花期6-7 月，果期8-10月。其树型高大，枝叶茂密，绿荫如盖，适作庭荫树。夏秋可观花，并为优良的蜜源植物。花蕾可作染料，果肉能入药，是防风固沙，用材及经济林兼用的树种。',
+                top: '700px',
+                left: '1305px'
+            },
+			{
+                name: '黄连木',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/黄连木.jpg',
+                description: '落叶乔木，花期在2-4月，果期在8-11月。因其木材色黄味苦似中药黄连，因此得名为黄连木。黄连木产中国的长江以南各省区及华北、西北，菲律宾亦有分布。成林后具有保持水土、调节小气候、防风固土、抗污染等生态功能。',
+                top: '925px',
+                left: '905px'
+            },
+			{
+                name: '榔榆',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/榔榆.jpg',
+                description: '落叶乔木，树冠广圆形，树皮灰色或灰褐色，冬季叶变为黄色或红色。宿存至第二年新叶开放后脱落，花果期8-10月。性喜光，耐干旱，对有毒气体烟尘抗性较强。榆干略弯，树皮斑驳雅致，小枝婉垂，是良好的观赏树及工厂绿化、四旁绿化树种。',
+                top: '575px',
+                left: '1205px'
+            },
+			{
+                name: '龙柏',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/龙柏.jpg',
+                description: '常绿乔木植物。树冠圆柱状或柱状塔形；枝条长大时会呈螺旋状伸展，向上盘曲，好像盘龙姿态，故名“龙柏”。花期是4月，果期10月。喜阳，稍耐阴，喜温暖湿润环境，抗寒、抗干旱，忌积水。龙柏由于树形优美，枝叶碧绿青翠，生长健康旺盛，观赏价值较高。',
+                top: '650px',
+                left: '975px'
+            },
+			{
+                name: '朴树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/朴树.jpg',
+                description: '落叶乔木，树冠圆形，树皮灰色，花期4-5月，果期9-11月。性喜光，稍耐阴，耐寒。适温暖湿润气候，有一定耐干旱能力，亦耐水湿及瘠薄土壤，适应力较强，二氧化硫、氯气、氟化氢具有一定抗性与吸收能力，是理想的绿化防风固堤树种。',
+                top: '490px',
+                left: '840px'
+            },
+			{
+                name: '染井吉野樱',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/染井吉野樱.jpg',
+                description: '乔木，树皮灰色。小枝淡紫褐色，无毛，嫩枝绿色，被疏柔毛，叶片椭圆卵形或倒卵形。花期4月，果期5月。喜光、喜温、喜湿、喜肥的花树，花期早，先叶开放，着花繁密，花色粉红，为著名的早春观赏树种。',
+                top: '780px',
+                left: '1185px'
+            },
+			{
+                name: '日本柳杉',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/日本柳杉.jpg',
+                description: '乔木，树皮红褐色，纤维状，裂成条片状落脱；大枝常轮状着生，水平开展或微下垂，树冠尖塔形；花期4月，球果10月成熟。日本柳杉树形高大，树干粗壮雄伟，在园林上最适孤植、对植及丛植或群植，也可培植为风景林。',
+                top: '600px',
+                left: '1115px'
+            },
+			{
+                name: '珊瑚树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/珊瑚树.jpg',
+                description: '常绿灌木或小乔木，枝灰色或灰褐色，花期4-5月（有时不定期开花），果熟期7-9月。性喜温暖、稍耐寒，喜光稍耐阴。根系发达、萌芽性强，耐修剪，珊瑚树枝繁叶茂，遮蔽效果好，红果形如珊瑚、绚丽可爱。此外，对大气污染具有较强的抵抗力。因此在绿化中被广泛应用。',
+                top: '730px',
+                left: '1340px'
+            },
+			{
+                name: '石榴',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/石榴.jpg',
+                description: '落叶乔木或灌木；花期5-7月，果期9-10月。喜温暖向阳的环境，耐旱、耐寒，也耐瘠薄，不耐涝和荫蔽。石榴树姿优美，枝叶秀丽，初春嫩叶抽绿，盛夏繁花似锦，秋季累果悬挂。中国传统文化视石榴为吉祥物，视它为多子多福的象征。',
+                top: '690px',
+                left: '880px'
+            },
+			{
+                name: '水杉',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/水杉.jpg',
+                description: '落叶乔木；高大挺拔，树冠锥形；叶线形，春夏碧绿青翠。12月转为砖红色；花期2-3月；果期10-11月。造林、观赏、材用树种。中国特有植物，野生仅分布于湖北、四川、湖南一带；有“活化石”之称，为国家一级重点保护野生植物，濒危（EN）种。',
+                top: '470px',
+                left: '1000px'
+            },
+			{
+                name: '晚樱',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/晚樱.jpg',
+                description: '落叶乔木，山樱花的变种。花常有香气。花期3-5月。喜光也耐阴，耐寒性较强，喜湿润土壤，在河岸沙壤土上生长良好。原产日本，中国华北及以南地区广为栽培，日本晚樱树姿洒脱开展，花枝繁茂，花开满树，花大艳丽，常用作行道树、风景树、庭荫树。',
+                top: '730px',
+                left: '1230px'
+            },
+			{
+                name: '喜树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/喜树.jpg',
+                description: '落叶乔木，树皮灰色或浅灰色，纵裂成浅沟状。小枝形，平展，叶互生，纸质，矩圆状卵形或矩圆状椭圆形，花期5-7月，果期9月。喜温暖湿润，不耐严寒和干燥，是一种速生丰产的优良树种。喜树全身是宝，其果实、根、树皮、树枝、叶均可入药。',
+                top: '540px',
+                left: '985px'
+            },
+			{
+                name: '香榧',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/香榧.jpg',
+                description: '常绿乔木，其小枝下垂，一、二年生小枝绿色，三年生枝呈绿紫色或紫色；叶深绿色，质较软；种子连肉质假种皮，宽矩圆形或倒卵圆形，花期4-5月，翌年10月种子成熟。喜温暖、湿润的气候。香榧材质优良， 是建筑、造船和工艺雕刻的良材。',
+                top: '570px',
+                left: '1180px'
+            },
+			{
+                name: '香樟',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/香樟.jpg',
+                description: '常绿大乔木，性喜温暖湿润的气候条件，不耐寒冷。花期4-5月，果期8-11月。香樟枝叶秀丽而有香气，冠大荫浓，树姿雄伟，是城市绿化的优良树种。木材及根、枝、叶可提取樟脑和樟油供医药及香料工业用。',
+                top: '430px',
+                left: '916px'
+            },
+			{
+                name: '绚丽海棠',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/绚丽海棠.jpg',
+                description: '落叶小乔木，树势强，树姿直立，树形圆而紧凑，树干棕红色，皮孔大而多。叶卵圆形至椭圆形，花期4月中下旬，花开繁密而艳丽，果期6-10月，原产美洲，耐寒，喜湿润土壤，耐旱，喜光，不耐荫。绚丽海棠可观花、赏果、看叶，是花叶果俱佳的园林树种。',
+                top: '660px',
+                left: '1200px'
+            },
+			{
+                name: '雪松',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/雪松.jpg',
+                description: '常绿乔木，树冠尖塔形，大枝平展，小枝略下垂。10-11月开花。球果翌年成熟，性喜阳光充足，也稍耐荫，要求温和凉润气候和上层深厚而排水良好的土壤。雪松树体高大，树形优美，是世界著名的庭园观赏树种之一。',
+                top: '750px',
+                left: '1160px'
+            },
+			{
+                name: '皂角 皂荚',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/皂荚.jpg',
+                description: '落叶乔木或小乔木，花期3-5月；果期5-12月。皂荚喜光稍耐荫，属于深根性植物，为生态经济型树种，耐旱节水，根系发达，可用做防护林和水土保持林。皂荚树的英果、种子、枝刺等均可入药，荚果入药可祛痰、利尿；种子入药可治癣和通便秘。',
+                top: '545px',
+                left: '960px'
+            },
+			{
+                name: '樟叶槭',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/樟叶槭.jpg',
+                description: '常绿乔木。树皮粗糙，深褐色或深灰色。小枝近于圆柱形，当年生嫩枝淡紫色，有淡黄色绒毛，多年生老枝褐色或深褐色。小坚果浅褐色，凸起，卵圆形。花期3月，果期8月。樟叶可作庭荫树、行道树，花是蜜源。木材坚韧细致，是良好的建筑家具和细木工用材。',
+                top: '640px',
+                left: '1100px'
+            },
+			{
+                name: '栀子花',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/栀子花.jpg',
+                description: '常绿灌木，喜光照充足且通风良好的环境，较耐寒，耐半阴，忌强光曝晒。花期3-7月，果期5月-翌年2月。在《本草纲目》中，栀子被称为“卮子”，它的果子像商周时代的青铜酒器“卮”，因此古人就顺势给它叫“栀子”。栀子花枝叶繁茂，叶色四季常绿，花芳香素雅，为重要的庭院观赏植物。',
+                top: '470px',
+                left: '660px'
+            },
+			{
+                name: '山楂',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/山楂.jpg',
+                description: '落叶乔木，花期5-6月，果期9-10月。山楂适应性强，喜凉爽，湿润的环境，既耐寒又耐高温，核质硬，果肉薄，味微酸涩。果可生吃或作果脯果糕，干制后可入药，是中国特有的药果兼用树种，是健脾开胃、消食化滞、活血化痰的良药。',
+                top: '620px',
+                left: '940px'
+            },
+			{
+                name: '紫藤',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/紫藤.jpg',
+                description: '落叶攀援缠绕性大藤本植物。花期4月中旬至5月上旬，果期5-8月。紫藤为暖带及温带植物，对生长环境的适应性强。紫藤花可提炼芳香油，并有解毒、止吐止泻等功效，也可食用，同时也可做绿化观赏植物。',
+                top: '765px',
+                left: '1335px'
+            },
+			{
+                name: '红枫',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/红枫.jpg',
+                description: '落叶小乔木，枝条多细长光滑，偏紫红色，叶掌状。性喜阳光，适合温暖湿润气候，怕烈日曝晒，较耐寒，稍耐旱，不耐涝。红枫是一种非常美丽的观叶树种，其叶形优美，红色鲜艳持久，树姿美观，广泛用于园林绿地及庭院做观赏树。',
+                top: '460px',
+                left: '1250px'
+            },
+			{
+                name: '紫薇',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/紫薇.jpg',
+                description: '落叶灌木或小乔木，喜光、略耐阴、耐干旱、忌水涝，喜暖湿气候，有一定的抗寒力。花期6-9月，果期9-12月。紫薇花色鲜艳美丽，开花时正当夏秋少花季节，花期长，寿命长，是集观赏、药用兼环保的夏秋季优良的观赏花卉，被人们广泛应用于园林绿化之中。紫薇花有富贵繁华之寓意。',
+                top: '465px',
+                left: '790px'
+            },
+			{
+                name: '鸡爪槭',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/鸡爪槭.jpg',
+                description: '落叶小乔木，树冠伞形，树皮深灰色。花期5月，果期9月。喜疏荫的环境，夏日怕日光曝晒，抗寒性强，能忍受较干旱的气候条件。对二氧化硫和烟尘抗性较强。其形美观，入秋后转为鲜红色，色艳如花，是优良的观叶树种。',
+                top: '735px',
+                left: '1125px'
+            },
+			{
+                name: '棠梨',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/棠梨.jpg',
+                description: '乔木。木梨叶卵形或长卵形，稀长椭圆状卵形，两面均无毛；花呈伞形总状花序，花序梗和花梗幼时均被稀疏柔毛;果卵球形或椭圆形，褐色，有稀疏斑点，萼片宿存;花期4月;果期8-9月。抗寒，寿命长，抗赤星病能力特强。棠梨在中国西北部常用做栽培梨的砧木使用。',
+                top: '630px',
+                left: '875px'
+            },
+			{
+                name: '紫玉兰',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/紫玉兰.jpg',
+                description: '落叶灌木，常丛生，树皮灰褐色，小枝绿紫色或淡褐紫色。花期3-4月，果期8-9月。喜温暖湿润和阳光充足环境，较耐寒但不耐旱和盐碱，怕水淹。紫玉兰为中国两千多年的传统花卉，是著名的早春观赏花木，早春开花时，满树紫红色花朵，幽姿淑态，别具风情。',
+                top: '635px',
+                left: '860px'
+            },
+			{
+                name: '棕榈',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/棕榈.jpg',
+                description: '乔木状，树干圆柱形，被不易脱落的老叶柄基部和密集的网状纤维，喜温暖湿润气候，喜光。耐寒性极强，稍耐阴。原产中国。花期4月，果期12月。棕皮用途广泛，是园林结合生产的理想树种，又是工厂绿化优良树种。',
+                top: '430px',
+                left: '1060px'
+            },
+			{
+                name: '腊梅',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/腊梅.jpg',
+                description: '落叶丛生灌木，是中国特产的传统名贵观赏花木，有着悠久的栽培历史和丰富的腊梅文化。腊梅性喜阳光，耐寒、耐旱，忌渍水。腊梅花芳香美丽，利于庭院栽植，又适作古桩盆景和插花与造型艺术，是冬季赏花的理想名贵花木。',
+                top: '780px',
+                left: '970px'
+            },
+			{
+                name: '铁树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/铁树.jpg',
+                description: '常绿棕榈状木本植物，《南越笔记》中记载道：“铁树体铁色微朱，以其难长，故又名苏铁。”花期6-7月，种子10月成熟。为热带、亚热带植物，喜温暖、向阳、干燥、通风良好的环境。其树姿优美，四季常青，为珍贵的观赏树种可做主景树，也可为配景树。',
+                top: '700px',
+                left: '1130px'
+            },
+			{
+                name: '银杏',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/银杏.jpg',
+                description: '落叶乔木，躯干挺拔，4-5月开花，并在9-10月份种子成熟，10月以后开始落叶。抗病害力强、耐污染力高，寿龄绵长，是世界上现存最古老的树种之一，被誉为植物王国的“活化石”，银杏树形优美，春夏季叶色嫩绿，秋季变成黄色，颇为美观，可作庭园树及行道树，具有观赏、经济、药用等价值。',
+                top: '300px',
+                left: '1175px'
+            },
+				{
+                name: '垂枝樱',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/垂枝樱.jpg',
+                description: '乔木，树皮灰褐色。小枝灰色，嫩枝绿色，密被白色短柔毛，枝条开展成弯弓形，小枝下垂呈鞭状。冬芽卵形，鳞片先端有疏毛。花期4月，果期6月。适宜于在阳光充足、气候湿润、土壤肥沃疏松、排水良好的弱酸性沙质和粘质土壤中生长。',
+                top: '690px',
+                left: '1200px'
+            },
+			{
+                name: '枫杨',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/枫杨.jpg',
+                description: '大乔木，幼树树皮平滑，浅灰色，老时则深纵裂；小枝灰色至褐色，花期4-5月，果熟期8-9月。属喜光树种，不耐庇荫，耐湿性强。枫杨为深根性树种，主根明显，侧根发达。萌芽力很强，生长很快。广泛栽植作园庭树或行道树。',
+                top: '920px',
+                left: '940px'
+            },
+				{
+                name: '构树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/构树.jpg',
+                description: '落叶乔木，树皮暗灰色，小枝密生柔毛。花期4-5月，果期6-7月。为强阳性树种，喜光，适应性强，耐干旱瘠薄，抗大气污染力强。其叶是很好的猪饲料，其韧皮纤维是造纸的高级原料，材质洁白，其根和种子均可入药，经济价值很高。',
+                top: '605px',
+                left: '1085px'
+            },
+				{
+                name: '红叶李',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/红叶李.jpg',
+                description: '灌木或小乔木植物；干皮紫灰色，多分枝，小枝暗红色；叶片椭圆形、卵形或倒卵形 。花期4月，果期8月。其叶子终年为紫红色，故又称“紫叶李”。喜光也稍耐阴，抗寒，适应性强，生长迅速，红叶、红枝有很高的观赏价值，有“紫气东来”的寓意。',
+                top: '645px',
+                left: '935px'
+            },
+				{
+                name: '榉树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/榉树.jpg',
+                description: '乔木，树皮灰白色或褐灰色，呈不规则的片状剥落。花期4月，果期10月。属阳性树种，喜光，喜温暖环境。树姿端庄，高大雄伟，秋叶变成褐红色，是观赏秋叶的优良树种。又因树生长健壮，寿命长，还有福泽、长寿的寓意。',
+                top: '535px',
+                left: '1205px'
+            },
+				{
+                name: '罗汉松',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/罗汉松.jpg',
+                description: '常绿针叶乔木，树皮灰色或灰褐色，浅纵裂，成薄片状脱落；枝开展或斜展，较密。花期4-5月，种子8-9月成熟。喜温暖、湿润和半阴环境，耐寒性较差。罗汉松神韵清雅挺拔，自有一股雄浑苍劲的傲人气势，有长寿、吉祥寓意，是庭院和高档住宅的首选绿化树种。',
+                top: '690px',
+                left: '1160px'
+            },
+				{
+                name: '南美枫香',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/南美枫香.jpg',
+                description: '大型落叶阔叶树种，干性挺直，株形伟岸，寿命在100年左右。通常有木栓质翅，叶互生，宽卵形，春夏叶色暗绿，秋季叶色有黄色、紫色或红色多色混合，落叶晚，在部分地区叶片挂树直到次年二月，亚热带树种。喜光照，在潮湿、排水良好的微酸性土壤上生长较好。',
+                top: '720px',
+                left: '890px'
+            },
+				{
+                name: '青枫',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/青枫.jpg',
+                description: '落叶小乔木，树冠扁圆形或伞形。小枝光滑，细长，紫色或灰紫色。单叶对生，叶纸质，弱阳性，耐半阴，受太阳西晒时生长不良。喜温暖、湿润环境，不耐寒，较耐旱，不耐水涝。青枫是园林绿化中常用的树木，价值颇高。',
+                top: '685px',
+                left: '1085px'
+            },
+				{
+                name: '三角枫',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/三角枫.jpg',
+                description: '落叶乔木，树皮暗灰色，片状剥落。花期4-5月，果熟期9-10月。弱阳性，喜光也耐荫，喜温暖湿润气候，为暖带树种，萌芽力强，耐修剪。三角枫树姿优雅，干皮美丽，春季花色黄绿，秋冬黄叶应蓝天，是良好的园林绿化树种和观叶树种。',
+                top: '495px',
+                left: '1200px'
+            },
+				{
+                name: '石楠',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/石楠.jpg',
+                description: '常绿灌木或小乔木。性喜温暖湿润的气候，喜光也耐荫，萌芽力强，耐修剪，抗寒力不强。花期4-5月，果期10月。李时珍解释因“生于石间向阳之处”，故名石南（楠）。石楠枝繁叶茂，终年常绿。夏季密生白色花朵，秋后鲜红果实缀满枝头，极具观赏价值。',
+                top: '595px',
+                left: '1155px'
+            },
+				{
+                name: '柿树',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/柿树.jpg',
+                description: '落叶大乔木，喜温暖气候，充足阳光和肥沃、湿润、排水良好的土壤，花期5-6月，果期9-10月。柿果实营养丰富，被誉为“果中圣品”。柿树寿命长，叶大荫浓，秋末冬初，霜叶染成红色，冬月，落叶后，柿实殷红不落，一树满挂累累红果，是优良的风景树。',
+                top: '790px',
+                left: '1200px'
+            },
+				{
+                name: '悬铃木',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/悬铃木.jpg',
+                description: '落叶大乔木，树皮光滑，呈片状脱落；花期4-5月；果为聚花果，果期9-10月。因其叶子似中国的梧桐，被人们叫作“法国梧桐”，喜光，耐寒耐旱，也耐湿，悬铃木树形叶大荫浓，干皮光滑，适应性强，为世界行道树和庭园树，被誉为“行道树之王”。',
+                top: '635px',
+                left: '1180px'
+            },
+				{
+                name: '羽毛枫',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/羽毛枫.jpg',
+                description: '落叶灌木，叶对生，无毛，春秋季常为红色，常具七全裂，裂片羽状深裂，轮廓披针形，先端尾尖。花紫色，花期4月，果期9月。中国分布于长江流域。喜光，喜温暖湿润气候，树优美，叶形独特，观赏价值高。',
+                top: '690px',
+                left: '1115px'
+            },
+				{
+                name: '月桂',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/月桂.jpg',
+                description: '常绿小乔木或灌木状，树皮黑褐色。小枝圆柱形，具纵向细条纹，幼嫩部分略被微柔毛或近无毛。果卵珠形，熟时暗紫色。花期3-5月，果期6-9月。喜光，稍耐阴，喜温暖湿润气候。桂作为贵重的香料和防腐剂被广泛使用；月桂叶还可以作香料调味。',
+                top: '560px',
+                left: '1010px'
+            },
+				{
+                name: '重阳木',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/重阳木.jpg',
+                description: '落叶乔木，树皮褐色，纵裂；木材表面槽棱不显；树冠伞形状，大枝斜展，小枝无毛，花期在4-5月，果期10-11月。为暖温带树种属阳性。喜光，稍耐阴。喜温暖气候，耐寒性较弱。重阳木是良好的庭荫和行道树种，在水土保持方面有自身的独特优势。',
+                top: '635px',
+                left: '1085px'
+            },
+				{
+                name: '紫荆',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/紫荆.jpg',
+                description: '落叶乔木或灌木。原产于中国。暖带树种，喜欢光照，较耐寒。稍耐阴。喜肥沃、排水良好的土壤，不耐湿。萌芽力强耐修剪。花期3-4月；果期8-10月。紫荆先花后叶，花形如蝶满树皆红，艳丽可爱，皮果木花皆可入药，其种子有毒。紫荆是家庭和美、骨肉情深的象征。',
+                top: '355px',
+                left: '807px'
+            },
+			{
+                name: '盘槐',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/盘槐.jpg',
+                description: '落叶乔木，树皮灰褐色，具纵裂纹。喜光、稍耐阴、能适应干冷气候。龙爪槐树冠优美，花芳香，是行道树和优良的蜜源植物；花和荚果入药，有清凉收敛、止血降压作用；本种由于生境不同，或由于人工选育结果，形态多变，产生许多变种和变型。',
+                top: '300px',
+                left: '1042px'
+            },
+			{
+                name: '茶花',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/茶花.jpg',
+                description: '灌木或小乔木，花期1-4月。茶花原产于中国东部，茶花惧风喜阳、地势高爽、空气流通、温暖湿润的环境。中国是茶花文化的发源地，茶花也是中国传统十大名花之一，因其植株形姿优美，叶为浓绿而有光泽，花形艳丽缤纷而受到世界园艺界的珍视。',
+                top: '450px',
+                left: '895px'
+            },
+			{
+                name: '臭椿',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/臭椿.jpg',
+                description: '乔木，花期4-5月，果期8-10月。喜光，能适应广泛气候条件，耐低温；耐干旱贫瘠，适应能力强。臭椿树干通直高大，树冠圆整如半球状，颇为壮观。叶大荫浓，秋季红果满树，虽叶及开花时有微臭但并不严重，故仍是一种很好的观赏树和庭荫树。',
+                top: '510px',
+                left: '950px'
+            },
+			{
+                name: '广玉兰',
+                iconSrc: '1.webp.png',
+                hoverSrc: '植物图片/广玉兰.jpg',
+                description: '常绿乔木，树皮淡褐色或灰色，叶厚革质，叶面深绿色有光泽。花期5-6月，果期9-10月。阳性树形，稍耐阴。喜温暖湿润气候，耐寒性较强。由于开花很大，形似荷花，故又称“荷花木兰”，为美丽的庭园绿化观赏树种。叶、幼枝和花可提取芳香油；花制浸膏用。',
+                top: '470px',
+                left: '845px'
+            },
+            // 这里可以添加更多的植物信息
+        ];
+
+        const plantContainers = document.getElementById('plant-containers');
+        const modal = document.getElementById('plant-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDescription = document.getElementById('modal-description');
+        const modalImage = document.getElementById('modal-image');
+
+        function createPlantContainer(plant) {
+            const container = document.createElement('div');
+            container.classList.add('plant-container');
+            container.style.top = plant.top;
+            container.style.left = plant.left;
+            container.onclick = () => openModal(plant);
+
+            const pic = document.createElement('img');
+            pic.classList.add('plant-pic');
+            pic.src = plant.iconSrc;
+            pic.alt = plant.name;
+
+            const hover = document.createElement('div');
+            hover.classList.add('plant-hover');
+            const hoverImg = document.createElement('img');
+            hoverImg.src = plant.hoverSrc;
+            hoverImg.style.width = '100%';
+            hover.appendChild(hoverImg);
+
+            container.appendChild(pic);
+            container.appendChild(hover);
+            plantContainers.appendChild(container);
+        }
+
+        function openModal(plant) {
+            modalTitle.textContent = plant.name;
+            modalDescription.textContent = plant.description;
+            modalImage.src = plant.hoverSrc;
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        window.onclick = (e) => e.target === modal && closeModal();
+        document.addEventListener('keydown', (e) => e.key === 'Escape' && closeModal());
+
+        plants.forEach(createPlantContainer);
+    </script>
+</body>
+</html>
+    
